@@ -20,11 +20,11 @@ npm run lint
 
 ## Architecture
 
-This is a sports analytics chatbot using xAI's Grok model.
+This is a sports analytics chatbot using Google's Gemini model with Google Search grounding.
 
 ### Core Stack
 - **Next.js 16** with App Router and Turbopack
-- **AI SDK v6** (`ai`, `@ai-sdk/react`, `@ai-sdk/xai`)
+- **AI SDK v6** (`ai`, `@ai-sdk/react`, `@ai-sdk/google`)
 - **Tailwind CSS v4**
 
 ### Key Files
@@ -94,7 +94,7 @@ message.parts?.map((part) => part.type === "text" ? part.text : null)
 ### API Route Pattern
 
 ```typescript
-import { xai } from "@ai-sdk/xai";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 
 export async function POST(req: Request) {
@@ -102,9 +102,12 @@ export async function POST(req: Request) {
   const modelMessages = convertMessages(messages);  // REQUIRED conversion
 
   const result = streamText({
-    model: xai("grok-3-mini"),
+    model: google("gemini-2.5-flash"),
     system: "...",
     messages: modelMessages,
+    tools: {
+      google_search: google.tools.googleSearch({}),  // Enable Google Search grounding
+    },
   });
 
   return result.toUIMessageStreamResponse();  // Use this for useChat compatibility
@@ -114,7 +117,7 @@ export async function POST(req: Request) {
 ## Environment Variables
 
 Required:
-- `XAI_API_KEY` - xAI API key for Grok model
+- `GOOGLE_GENERATIVE_AI_API_KEY` - Google AI API key for Gemini
 
 ## Deployment
 

@@ -1,9 +1,9 @@
-import { xai } from "@ai-sdk/xai";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 
 export const maxDuration = 30;
 
-const SPORTS_SYSTEM_PROMPT = `You are an expert sports analytics assistant for a betting community. You have access to real-time data through web search and X (Twitter) search.
+const SPORTS_SYSTEM_PROMPT = `You are an expert sports analytics assistant for a betting community. You have access to real-time data through Google Search.
 
 Your expertise covers all major US sports:
 - NFL (American Football)
@@ -14,7 +14,7 @@ Your expertise covers all major US sports:
 
 When users ask about sports data, you should:
 
-1. **Always search for the latest information** - Use your web search capabilities to get current scores, standings, stats, and news. Never rely on potentially outdated knowledge.
+1. **Always search for the latest information** - Use Google Search to get current scores, standings, stats, and news. Never rely on potentially outdated knowledge.
 
 2. **Provide betting-relevant context** - When discussing games, include relevant information like:
    - Recent team performance and trends
@@ -69,17 +69,11 @@ export async function POST(req: Request) {
   const modelMessages = convertMessages(messages);
 
   const result = streamText({
-    model: xai("grok-3-latest"),
+    model: google("gemini-2.5-flash"),
     system: SPORTS_SYSTEM_PROMPT,
     messages: modelMessages,
-    providerOptions: {
-      xai: {
-        searchParameters: {
-          mode: "on",
-          returnCitations: true,
-          maxSearchResults: 10,
-        },
-      },
+    tools: {
+      google_search: google.tools.googleSearch({}),
     },
   });
 
