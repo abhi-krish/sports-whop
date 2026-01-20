@@ -31,13 +31,13 @@ export function ChatInterface() {
 
     const message = input;
     setInput("");
-    await sendMessage({ content: message });
+    await sendMessage({ text: message });
   };
 
   const handleExampleClick = async (query: string) => {
     if (isLoading) return;
     setInput("");
-    await sendMessage({ content: query });
+    await sendMessage({ text: query });
   };
 
   return (
