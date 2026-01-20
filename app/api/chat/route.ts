@@ -75,9 +75,8 @@ export async function POST(req: Request) {
     providerOptions: {
       xai: {
         searchParameters: {
-          mode: "on", // Force live search for real-time sports data
+          mode: "on",
           returnCitations: true,
-          sources: ["web", "x", "news"], // Search web, X posts, and news
           maxSearchResults: 10,
         },
       },
