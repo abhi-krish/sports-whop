@@ -69,15 +69,16 @@ export async function POST(req: Request) {
   const modelMessages = convertMessages(messages);
 
   const result = streamText({
-    model: xai("grok-3-mini"),
+    model: xai("grok-3-latest"),
     system: SPORTS_SYSTEM_PROMPT,
     messages: modelMessages,
     providerOptions: {
       xai: {
         searchParameters: {
-          mode: "auto", // Let model decide when to search
+          mode: "on", // Force live search for real-time sports data
           returnCitations: true,
-          fromDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Last 7 days
+          sources: ["web", "x", "news"], // Search web, X posts, and news
+          maxSearchResults: 10,
         },
       },
     },
