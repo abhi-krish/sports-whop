@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Development (runs whop-proxy with Next.js Turbopack)
+# Development
 npm run dev
 
 # Production build - ALWAYS run before deploying to catch TypeScript errors
@@ -20,45 +20,104 @@ npm run lint
 
 ## Architecture
 
-This is a Whop B2B app - a sports analytics chatbot that Whop creators install for their community members.
+This is a sports analytics chatbot using xAI's Grok model.
 
 ### Core Stack
 - **Next.js 16** with App Router and Turbopack
-- **AI SDK v6** (`ai`, `@ai-sdk/react`, `@ai-sdk/xai`) - uses xAI's Grok model
-- **Whop SDK** (`@whop/react`, `@whop/sdk`) - for Whop platform integration
+- **AI SDK v6** (`ai`, `@ai-sdk/react`, `@ai-sdk/xai`)
 - **Tailwind CSS v4**
 
 ### Key Files
 
-**Chat System:**
-- `app/api/chat/route.ts` - API endpoint using `streamText()` with `toUIMessageStreamResponse()`
-- `app/components/ChatInterface.tsx` - Client component using `useChat()` hook
+```
+app/
+├── api/chat/route.ts        # API endpoint - streamText + message conversion
+├── components/ChatInterface.tsx  # Client component - useChat hook
+├── page.tsx                 # Main page
+├── layout.tsx               # Root layout
+└── globals.css
+```
 
-**Whop Integration:**
-- `app/layout.tsx` - Wraps app with `<WhopApp>` provider
-- `lib/whop-sdk.ts` - Whop SDK instance configuration
-- `app/experiences/[experienceId]/page.tsx` - Member-facing app view
-- `app/dashboard/[companyId]/page.tsx` - Creator dashboard view
-- `app/discover/page.tsx` - App store discovery page
+## AI SDK v6 Critical Information
 
-### AI SDK v6 Specifics
+**This is the most common source of bugs. Read carefully.**
 
-The `useChat()` hook in v6 has a different API than earlier versions:
-- Returns `{ messages, sendMessage, status, error }` (not `handleSubmit`, `handleInputChange`, `input`)
-- Send messages with `sendMessage({ text: "message" })` (not `content`)
-- Check loading state with `status === "streaming" || status === "submitted"`
-- Messages have `parts` array with `{ type: "text", text: "..." }` format
+### Message Format Mismatch
+
+The frontend `useChat()` hook and backend `streamText()` use DIFFERENT message formats:
+
+| Component | Format | Example |
+|-----------|--------|---------|
+| `useChat()` (frontend) | `parts` array | `{ role: "user", parts: [{ type: "text", text: "Hello" }] }` |
+| `streamText()` (backend) | `content` string | `{ role: "user", content: "Hello" }` |
+
+**Solution:** The API route must convert messages:
+
+```typescript
+function convertMessages(messages: any[]) {
+  return messages.map((msg) => {
+    if (typeof msg.content === "string") {
+      return { role: msg.role, content: msg.content };
+    }
+    if (msg.parts) {
+      const text = msg.parts
+        .filter((p: any) => p.type === "text")
+        .map((p: any) => p.text)
+        .join("");
+      return { role: msg.role, content: text };
+    }
+    return { role: msg.role, content: "" };
+  });
+}
+```
+
+### useChat Hook API (v6)
+
+```typescript
+const { messages, sendMessage, status, error } = useChat();
+
+// Send a message - use "text" not "content"
+await sendMessage({ text: "Hello" });
+
+// Check loading state
+const isLoading = status === "streaming" || status === "submitted";
+
+// Render message content from parts
+message.parts?.map((part) => part.type === "text" ? part.text : null)
+```
+
+**Common mistakes:**
+- ❌ `sendMessage({ content: "Hello" })` - wrong property name
+- ❌ `message.content` - doesn't exist in v6, use `message.parts`
+- ❌ `handleSubmit`, `handleInputChange`, `input` - don't exist in v6
+
+### API Route Pattern
+
+```typescript
+import { xai } from "@ai-sdk/xai";
+import { streamText } from "ai";
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const modelMessages = convertMessages(messages);  // REQUIRED conversion
+
+  const result = streamText({
+    model: xai("grok-3-mini"),
+    system: "...",
+    messages: modelMessages,
+  });
+
+  return result.toUIMessageStreamResponse();  // Use this for useChat compatibility
+}
+```
 
 ## Environment Variables
 
-Required for the chatbot:
+Required:
 - `XAI_API_KEY` - xAI API key for Grok model
-
-Optional for Whop features:
-- `NEXT_PUBLIC_WHOP_APP_ID` - Whop app identifier
-- `WHOP_API_KEY` - For server-side Whop SDK calls
-- `WHOP_WEBHOOK_SECRET` - For webhook verification
 
 ## Deployment
 
-Deploy to Vercel with the GitHub repo connected. The `.npmrc` file sets `legacy-peer-deps=true` to handle React version conflicts.
+- Deploy to Vercel with GitHub repo connected
+- `.npmrc` has `legacy-peer-deps=true` for React version conflicts
+- **Always run `npm run build` locally before pushing** to catch TypeScript errors

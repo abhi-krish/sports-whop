@@ -38,6 +38,25 @@ Example queries you can help with:
 
 Always prioritize accuracy and timeliness of information.`;
 
+// Convert UI messages (parts array) to model messages (content string)
+function convertMessages(messages: any[]) {
+  return messages.map((msg) => {
+    // If message already has content string, use it
+    if (typeof msg.content === "string") {
+      return { role: msg.role, content: msg.content };
+    }
+    // If message has parts array, extract text
+    if (msg.parts) {
+      const text = msg.parts
+        .filter((p: any) => p.type === "text")
+        .map((p: any) => p.text)
+        .join("");
+      return { role: msg.role, content: text };
+    }
+    return { role: msg.role, content: "" };
+  });
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const messages = body.messages || [];
@@ -46,12 +65,13 @@ export async function POST(req: Request) {
     return new Response("No messages provided", { status: 400 });
   }
 
-  // Messages from useChat already have content string format
-  // which is what streamText expects
+  // Convert UI messages to model messages format
+  const modelMessages = convertMessages(messages);
+
   const result = streamText({
     model: xai("grok-3-mini"),
     system: SPORTS_SYSTEM_PROMPT,
-    messages,
+    messages: modelMessages,
   });
 
   return result.toUIMessageStreamResponse();
