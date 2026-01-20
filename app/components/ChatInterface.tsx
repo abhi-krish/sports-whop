@@ -95,7 +95,7 @@ export function ChatInterface() {
                     return <span key={i}>{part.text}</span>;
                   }
                   return null;
-                }) || message.content}
+                })}
               </div>
             </div>
           </div>
