@@ -72,6 +72,15 @@ export async function POST(req: Request) {
     model: xai("grok-3-mini"),
     system: SPORTS_SYSTEM_PROMPT,
     messages: modelMessages,
+    providerOptions: {
+      xai: {
+        searchParameters: {
+          mode: "auto", // Let model decide when to search
+          returnCitations: true,
+          fromDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Last 7 days
+        },
+      },
+    },
   });
 
   return result.toUIMessageStreamResponse();
