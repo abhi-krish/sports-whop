@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Whop App",
-	description: "My Whop App",
+	title: "Sports Analytics Bot",
+	description: "Real-time sports data chatbot for NFL, NBA, MLB, NHL, and MLS",
 };
 
 export default function RootLayout({
